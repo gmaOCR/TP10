@@ -709,3 +709,5 @@
 /.idea/inspectionProfiles/Project_Default.xml
 /.idea/TP10V2.iml
 /.idea/vcs.xml
+/Lib/site-packages/
+/Scripts/
