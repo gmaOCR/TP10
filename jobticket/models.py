@@ -20,13 +20,6 @@ class Project(models.Model):
 
 
 class Contributor(models.Model):
-    CHOICES_PERM = (
-        ('C', 'Create'),
-        ('R', 'Read'),
-        ('U', 'Update'),
-        ('D', 'Delete')
-    )
-
     CHOICE_ROLE = (
         ('Resp', 'Responsable'),
         ('Auteur', 'Auteur'),
@@ -34,7 +27,15 @@ class Contributor(models.Model):
     )
 
     role = models.CharField(max_length=15, choices=CHOICE_ROLE)
-    permission = models.CharField(max_length=15, choices=CHOICES_PERM)
+    permission = models.CharField(
+        max_length=20, null=True, blank=True, verbose_name='permission'
+    )
+    user = models.ForeignKey(
+        to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
+    project = models.ForeignKey(
+        to=Project, on_delete=models.CASCADE, related_name='contributor_project'
+    )
 
 
 class Issue(models.Model):
@@ -58,6 +59,9 @@ class Issue(models.Model):
 
     title = models.CharField(max_length=200, validators=[MinLengthValidator(5)])
     desc = models.CharField(max_length=2000, validators=[MinLengthValidator(20)])
+    project = models.ForeignKey(
+        to=Project, on_delete=models.CASCADE, related_name='issue_project'
+    )
     tag = models.CharField(max_length=20, choices=TAG_CHOICES)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
