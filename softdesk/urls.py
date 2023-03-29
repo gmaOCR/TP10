@@ -1,4 +1,4 @@
-"""softdeskasdsa URL Configuration
+"""softdesk URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.2/topics/http/urls/
@@ -17,13 +17,21 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 
-from jobticket.views import ProjectViewSet
+
+from jobticket.views import ProjectViewSet, UserViewSet, LoginView, CommentViewSet, IssueViewSet, ContributorViewSet
 
 router = routers.SimpleRouter()
-router.register('project', ProjectViewSet, basename="project")
+router.register('projects', ProjectViewSet, basename="projects")
+router.register('users', UserViewSet, basename="users")
+router.register(r'projects/(?P<project_id>\d+)/issues', IssueViewSet, basename='project-issues')
+router.register(r'projects/(?P<project_id>\d+)/users', ContributorViewSet, basename='project-contrib')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
-    path('api/', include(router.urls))
+    path('api/login/', LoginView.as_view(), name='login'),
+    path('api/', include(router.urls)),
+    path('api/signup/', UserViewSet.as_view({'post': 'signup'}), name='signup'),
 ]
+
+urlpatterns += router.urls
