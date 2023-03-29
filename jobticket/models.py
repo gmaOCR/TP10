@@ -34,7 +34,7 @@ class Contributor(models.Model):
 
     role = models.CharField(max_length=15, choices=CHOICE_ROLE)
     permission = models.CharField(
-        max_length=20, null=True, blank=True, verbose_name='contributor_permission'
+      max_length=15, choices=CHOICE_PERMISSIONS, verbose_name='contributor_permission'
     )
     user = models.ForeignKey(
         to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE
