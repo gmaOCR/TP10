@@ -22,19 +22,25 @@ class Project(models.Model):
 class Contributor(models.Model):
     CHOICE_ROLE = (
         ('Resp', 'Responsable'),
-        ('Auteur', 'Auteur'),
         ('Contrib', 'Contributeur')
+    )
+
+    CHOICE_PERMISSIONS = (
+        ('R', 'Read'),
+        ('C', 'Create'),
+        ('U', 'Update'),
+        ('D', 'Delete')
     )
 
     role = models.CharField(max_length=15, choices=CHOICE_ROLE)
     permission = models.CharField(
-        max_length=20, null=True, blank=True, verbose_name='permission'
+        max_length=20, null=True, blank=True, verbose_name='contributor_permission'
     )
     user = models.ForeignKey(
         to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE
     )
     project = models.ForeignKey(
-        to=Project, on_delete=models.CASCADE, related_name='contributor_project'
+        to=Project, on_delete=models.CASCADE, related_name='contributors'
     )
 
 
