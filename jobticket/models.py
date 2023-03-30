@@ -26,15 +26,13 @@ class Contributor(models.Model):
     )
 
     CHOICE_PERMISSIONS = (
-        ('R', 'Read'),
-        ('C', 'Create'),
-        ('U', 'Update'),
-        ('D', 'Delete')
+        ('CR', 'Create & Read'),
+        ('CRUD', 'Full'),
     )
 
     role = models.CharField(max_length=15, choices=CHOICE_ROLE)
     permission = models.CharField(
-      max_length=15, choices=CHOICE_PERMISSIONS, verbose_name='contributor_permission'
+      max_length=15, default="Read", choices=CHOICE_PERMISSIONS, verbose_name='Permissions'
     )
     user = models.ForeignKey(
         to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE

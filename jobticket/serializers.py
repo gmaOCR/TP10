@@ -9,7 +9,7 @@ User = get_user_model()
 class ProjectListSerializer(ModelSerializer):
     class Meta:
         model = Project
-        fields = ['id', 'title', 'description']
+        fields = ['id', 'title', 'description', 'type']
 
 
 class ProjectDetailSerializer(ModelSerializer):
@@ -21,9 +21,8 @@ class ProjectDetailSerializer(ModelSerializer):
 
 
 class IssueDetailSerializer(ModelSerializer):
-    author_user = serializers.HiddenField(
-        default=serializers.CurrentUserDefault(),
-        write_only=True)
+    author_user = serializers.CharField(source='author_user.email')
+    assigned_to = serializers.CharField(source='assigned_to.email')
 
     class Meta:
         model = Issue
@@ -46,12 +45,11 @@ class ContributorsDetailSerializer(ModelSerializer):
 
 
 class ContributorsListSerializer(ModelSerializer):
-    user = serializers.CharField(source="user.email")
-    project = serializers.CharField(source="project.title")
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), source="user.email")
 
     class Meta:
         model = Contributor
-        fields = ['id', 'project', 'user']
+        fields = ['id', 'user']
 
 
 class CommentListSerializer(ModelSerializer):
