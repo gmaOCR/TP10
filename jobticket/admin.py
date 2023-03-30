@@ -11,13 +11,13 @@ class ProjectAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super(ProjectAdmin, self).get_queryset(request)
-        qs = qs.annotate(Count('contributor_project'))
+        qs = qs.annotate(Count('contributors'))
         return qs
 
     def project_contributor_count(self, obj):
         return obj.contributor_project__count
 
-    project_contributor_count.admin_order_field = 'contributor_project__count'
+    project_contributor_count.admin_order_field = 'contributors__count'
     project_contributor_count.short_description = 'Contributors'
 
     def __repr__(self):
@@ -26,6 +26,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 class ContributorAdmin(admin.ModelAdmin):
     list_display = ('user', 'role', 'permission', 'project')
+
 
     def __repr__(self):
         return f"{self.user} - {self.role}"
