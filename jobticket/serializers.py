@@ -9,7 +9,7 @@ User = get_user_model()
 class ProjectListSerializer(ModelSerializer):
     class Meta:
         model = Project
-        fields = ['id', 'title', 'description', 'type']
+        fields = ['id', 'title', 'type']
 
 
 class ProjectDetailSerializer(ModelSerializer):
@@ -17,7 +17,7 @@ class ProjectDetailSerializer(ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['id', 'type', 'title', 'description', 'author_user']
+        fields = ['id', 'title', 'description', 'author_user', 'type']
 
 
 class IssueDetailSerializer(ModelSerializer):
@@ -62,17 +62,6 @@ class CommentDetailSerializer(ModelSerializer):
     class Meta:
         model = Comment
         fields = ['desc', 'author_user', 'issue', 'created_time']
-
-
-class UserSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('email', 'password', 'first_name', 'last_name')
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
 
 
 class LoginSerializer(serializers.Serializer):
