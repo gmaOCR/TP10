@@ -19,7 +19,7 @@ class ProjectDetailSerializer(ModelSerializer):
         model = Project
         fields = ['id', 'title', 'description', 'author_user', 'type', 'contributors']
 
-    def contributors(self,instance):
+    def contributors(self, instance):
         queryset = instance.contributors.all()
 
         serializer = ContributorsDetailSerializer(queryset, many=True)
@@ -43,7 +43,6 @@ class ProjectDetailSerializer(ModelSerializer):
         return instance
 
 
-
 class IssueDetailSerializer(ModelSerializer):
     author_user = serializers.CharField(source='author_user.email')
     assigned_to = serializers.CharField(source='assigned_to.email')
@@ -51,7 +50,8 @@ class IssueDetailSerializer(ModelSerializer):
 
     class Meta:
         model = Issue
-        fields = ['id', 'title', 'desc', 'tag', 'priority', 'status', 'project', 'author_user', 'assigned_to', 'created_time']
+        fields = ['id', 'title', 'desc', 'tag', 'priority', 'status', 'project', 'author_user', 'assigned_to',
+                  'comments', 'created_time']
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
@@ -121,15 +121,34 @@ class ContributorsListSerializer(ModelSerializer):
 
 
 class CommentListSerializer(ModelSerializer):
+    author_user = serializers.CharField(source='author_user.email')
+    issue = serializers.CharField(source='issue.title')
+
     class Meta:
         model = Comment
-        fields = ['author_user', 'issue']
+        fields = ['id', 'author_user', 'issue']
 
 
 class CommentDetailSerializer(ModelSerializer):
+    author_user = serializers.CharField(source='author_user.email')
+
     class Meta:
         model = Comment
-        fields = ['desc', 'author_user', 'issue', 'created_time']
+        fields = ['issue', 'desc', 'author_user', 'created_time']
+
+    def update(self, instance, validated_data):
+        instance.desc = validated_data.get('desc', instance.desc)
+        instance.issue = validated_data.get('issue', instance.issue)
+
+        if 'author_user' in validated_data:
+            author_user_email = validated_data.pop('author_user')
+            author_user = User.objects.get(email=author_user_email['email'])
+            instance.author_user = author_user
+
+        # 'project', 'author_user' and 'created_time' fields should not change
+        instance.save(update_fields=['desc', 'author_user', 'issue'])
+
+        return instance
 
 
 class LoginSerializer(serializers.Serializer):

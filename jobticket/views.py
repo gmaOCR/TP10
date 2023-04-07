@@ -183,12 +183,12 @@ class IssueViewSet(ModelViewSet):
 
         # Retourner la réponse avec la nouvelle instance `Issue`
         serializer = IssueDetailSerializer(instance)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'message': 'The issue has been created'}, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         # Retrieve the instance to update
         instance = self.get_object()
-        self.check_object_permissions(instance)
+        self.check_object_permissions(request, instance)
 
         # Validate the request data
         serializer = IssueDetailSerializer(instance, data=request.data, partial=True)
@@ -197,7 +197,7 @@ class IssueViewSet(ModelViewSet):
         # Save the updated instance
         serializer.save()
 
-        return Response(serializer.data)
+        return Response({'message': 'The issue has been updated'}, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         issue = get_object_or_404(Issue, pk=self.kwargs['pk'])
@@ -215,11 +215,65 @@ class CommentViewSet(ModelViewSet):
     detail_serializer_class = CommentDetailSerializer
 
     def get_queryset(self):
+        contributor_projects = Project.objects.filter(
+            Q(contributors__user_id=self.request.user)
+            | Q(author_user=self.request.user)
+        )
+        # il faut que le projet de l'issue reliée aux commentaires
+        # soit dans les projets accessibles par le user authentifié
         return Comment.objects.filter(
-            Q(author_user=self.request.user) | Q(contributors__user=self.request.user)
+            issue_id=self.kwargs['issue_id'],
+            issue__in=Issue.objects.filter(project__in=contributor_projects),
+            issue__project_id=self.kwargs['project_id'],
         )
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return self.detail_serializer_class
         return super().get_serializer_class()
+
+    def create(self, request, *args, **kwargs):
+        # Récupérer l'objet Issue correspondant à l'identificateur de problème fourni dans l'URL
+        issue_id = self.kwargs.get('issue_id', None)
+        if issue_id is None:
+            return Response({"error": "issue_id is required"}, status=400)
+        issue = get_object_or_404(Issue, pk=issue_id)
+
+        # Vérifier que l'utilisateur courant a les permissions appropriées pour créer l'objet Comment
+        self.check_object_permissions(request, issue)
+
+        # Ajouter la `issue`, l'`author_user` aux données valides
+        validated_data = {
+            'issue': issue,
+            'author_user': request.user,
+            **request.data  # Utiliser les données entrées par l'utilisateur
+        }
+
+        # Créer l'instance `Comment` avec les données valides
+        instance = Comment.objects.create(**validated_data)
+        # Retourner la réponse avec la nouvelle instance `Comment`
+        serializer = CommentDetailSerializer(instance)
+        return Response({'message': 'The comment has been created'}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        # Retrieve the instance to update
+        instance = self.get_object()
+        self.check_object_permissions(request, instance)
+
+        # Validate the request data
+        serializer = CommentDetailSerializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        # Save the updated instance
+        serializer.save()
+
+        return Response({'message': 'The comment has been updated'}, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        comment = get_object_or_404(Comment, pk=self.kwargs['pk'])
+        self.check_object_permissions(request, comment)
+        comment.delete()
+        return Response(
+            {'message': 'The comment has been deleted'},
+            status=status.HTTP_200_OK,
+        )

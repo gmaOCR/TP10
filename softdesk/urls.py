@@ -14,7 +14,8 @@ router = routers.SimpleRouter()
 router.register('projects', ProjectViewSet, basename="projects")
 router.register(r'projects/(?P<project_id>\d+)/issues', IssueViewSet, basename='project-issues')
 router.register(r'projects/(?P<project_id>\d+)/users', ContributorViewSet, basename='project-contributors')
-router.register(r'projects/(?P<project_id>\d+)/issues/(?P<issue_id>\d+)/comments/', CommentViewSet, basename='project-comments')
+router.register(r'projects/(?P<project_id>\d+)/issues/(?P<issue_id>\d+)/comments', CommentViewSet,
+                basename='project-comments')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

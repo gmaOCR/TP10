@@ -84,6 +84,6 @@ class Comment(models.Model):
         to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comment_author'
     )
     issue = models.ForeignKey(
-        to=Issue, on_delete=models.CASCADE, related_name='comment_issue'
+        to=Issue, on_delete=models.CASCADE, related_name='comments'
     )
     created_time = models.DateTimeField(auto_now_add=True)
