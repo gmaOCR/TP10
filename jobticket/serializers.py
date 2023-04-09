@@ -1,7 +1,8 @@
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import get_user_model
 from rest_framework.serializers import ModelSerializer
 from .models import Project, Issue, Comment, Contributor
 from rest_framework import serializers
+from rest_framework.serializers import CurrentUserDefault
 
 User = get_user_model()
 
@@ -12,8 +13,9 @@ class ProjectListSerializer(ModelSerializer):
         fields = ['id', 'title', 'type']
 
 
-class ProjectDetailSerializer(ModelSerializer):
-    author_user = serializers.CharField(source='author_user.email')
+class ProjectDetailSerializer(serializers.ModelSerializer):
+    # author_user = serializers.CharField(source='author_user.email')
+    author_user = serializers.CharField(source='author_user.email', read_only=False, required=False)
 
     class Meta:
         model = Project
@@ -21,9 +23,7 @@ class ProjectDetailSerializer(ModelSerializer):
 
     def contributors(self, instance):
         queryset = instance.contributors.all()
-
-        serializer = ContributorsDetailSerializer(queryset, many=True)
-
+        serializer = ContributorsDetailSerializer(queryset, many=True, read_only=True, required=False)
         return serializer.data
 
     def update(self, instance, validated_data):
@@ -41,6 +41,10 @@ class ProjectDetailSerializer(ModelSerializer):
 
         instance.save()
         return instance
+
+    def create(self, validated_data):
+        validated_data['author_user'] = self.context['request'].user
+        return super().create(validated_data)
 
 
 class IssueDetailSerializer(ModelSerializer):
@@ -62,7 +66,18 @@ class IssueDetailSerializer(ModelSerializer):
 
         if 'assigned_to' in validated_data:
             assigned_to_email = validated_data.pop('assigned_to')
-            assigned_to_user = User.objects.get(email=assigned_to_email['email'])
+            try:
+                assigned_to_user = User.objects.get(email=assigned_to_email['email'])
+            except User.DoesNotExist:
+                raise serializers.ValidationError(
+                    "User with email {} does not exist.".format(assigned_to_email['email']))
+
+            project = instance.project
+            if not project.contributors.filter(user=assigned_to_user).exists():
+                raise serializers.ValidationError(
+                    "User with email {} is not a contributor of the project.".format(assigned_to_email['email']))
+
+
             instance.assigned_to = assigned_to_user
 
         # 'project', 'author_user' and 'created_time' fields should not change
@@ -96,7 +111,7 @@ class IssueDetailSerializer(ModelSerializer):
 
 
 class IssueListSerializer(ModelSerializer):
-    author_user = serializers.CharField(source='author_user.email')
+    author_user = serializers.CharField(source='author_user.email', read_only=False, required=False)
 
     class Meta:
         model = Issue
@@ -131,6 +146,7 @@ class CommentListSerializer(ModelSerializer):
 
 class CommentDetailSerializer(ModelSerializer):
     author_user = serializers.CharField(source='author_user.email')
+    issue = serializers.CharField(source='issue.title')
 
     class Meta:
         model = Comment
@@ -150,17 +166,3 @@ class CommentDetailSerializer(ModelSerializer):
 
         return instance
 
-
-class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField()
-
-    def validate(self, data):
-        email = data.get('email')
-        password = data.get('password')
-        user = authenticate(username=email, password=password)
-        if user and user.is_active:
-            data['user'] = user
-        else:
-            raise serializers.ValidationError("Unable to log in with provided credentials.")
-        return data

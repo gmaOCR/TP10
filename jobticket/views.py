@@ -39,25 +39,27 @@ class ProjectViewSet(ModelViewSet):
             return self.serializer_class
         return super(ProjectViewSet, self).get_serializer_class()
 
-    def create(self, request):
+    def create(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({"error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
-        serializer = ProjectDetailSerializer(data=request.data)
-        if serializer.is_valid():
-            project = serializer.save(author_user=request.user)
-            contributor, created = Contributor.objects.get_or_create(
-                project=project,
-                user=request.user,
-                defaults={'role': 'Responsable', 'permission': 'Full'}
-            )
 
-            if created:
-                return Response(self.detail_serializer_class(project).data, status=201)
-            else:
-                return Response({"error": "User is already a contributor for this project."},
-                                status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response(serializer.errors, status=400)
+        serializer = ProjectListSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Créer le projet avec l'utilisateur courant comme auteur
+        project = serializer.save(author_user=request.user)
+
+        # Ajouter le contributeur actuel en tant que responsable avec toutes les permissions
+        contributor = Contributor.objects.create(
+            project=project,
+            user=request.user,
+            role='Responsable',
+            permission='CRUD'
+        )
+
+        # Retourner la réponse avec les données du projet créé
+        serializer = ProjectListSerializer(project)
+        return Response({"message": "Project created."}, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, pk=None):
         project = Project.objects.get(pk=pk)
@@ -83,7 +85,7 @@ class ContributorViewSet(ModelViewSet):
     detail_serializer_class = ContributorsDetailSerializer
     serializer_class = ContributorsListSerializer
 
-    permission_classes = [IsAuthenticated, IsAuthor]
+    permission_classes = [IsAuthenticated, IsContributor]
 
     def get_queryset(self):
         return Contributor.objects.filter(project=self.kwargs['project_id'])
@@ -124,10 +126,14 @@ class ContributorViewSet(ModelViewSet):
     def destroy(self, request, project_id=None, pk=None):
         try:
             contributor = Contributor.objects.get(pk=pk, project__pk=project_id)
-            self.check_object_permissions(request, contributor)
-            contributor.delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            project = contributor.project
+            if project.author_user == request.user:
+                self.check_object_permissions(request, project)
+                contributor.delete()
+                return Response({"message": "Contributor deleted."}, status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response({"message": "You are not authorized to perform this action."},
+                                status=status.HTTP_403_FORBIDDEN)
         except Contributor.DoesNotExist:
             return Response({"message": "Issue not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -136,7 +142,7 @@ class ContributorViewSet(ModelViewSet):
 
 
 class IssueViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated, IsContributor]
+    permission_classes = [IsAuthenticated, IsAuthor, IsContributor]
     serializer_class = IssueListSerializer
     detail_serializer_class = IssueDetailSerializer
 
@@ -159,6 +165,7 @@ class IssueViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         # Récupérer l'objet Project correspondant à l'identificateur de projet fourni dans l'URL
         project_id = self.kwargs.get('project_id', None)
+
         if project_id is None:
             return Response({"error": "project_id is required"}, status=400)
         project = get_object_or_404(Project, pk=project_id)
@@ -188,12 +195,11 @@ class IssueViewSet(ModelViewSet):
     def update(self, request, *args, **kwargs):
         # Retrieve the instance to update
         instance = self.get_object()
-        self.check_object_permissions(request, instance)
 
         # Validate the request data
         serializer = IssueDetailSerializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-
+        self.check_object_permissions(request, instance)
         # Save the updated instance
         serializer.save()
 
