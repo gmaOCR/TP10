@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from rest_framework.serializers import ModelSerializer
 from .models import Project, Issue, Comment, Contributor
 from rest_framework import serializers
-from rest_framework.serializers import CurrentUserDefault
 
 User = get_user_model()
 
@@ -165,4 +164,3 @@ class CommentDetailSerializer(ModelSerializer):
         instance.save(update_fields=['desc', 'author_user', 'issue'])
 
         return instance
-
