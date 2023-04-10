@@ -477,8 +477,6 @@
 /Scripts/pip.exe
 /Scripts/pip3.10.exe
 /Scripts/pip3.exe
-/Pipfile
-/Pipfile.lock
 /Lib/site-packages/pip/_internal/metadata/pkg_resources.py
 /Lib/site-packages/pip/_vendor/pygments/plugin.py
 /Lib/site-packages/pip/_vendor/urllib3/poolmanager.py
