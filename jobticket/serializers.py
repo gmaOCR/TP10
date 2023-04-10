@@ -117,10 +117,11 @@ class IssueDetailSerializer(ModelSerializer):
 
 class IssueListSerializer(ModelSerializer):
     author_user = serializers.CharField(source='author_user.email', read_only=False, required=False)
+    assigned_to = serializers.CharField(source='assigned_to.email', read_only=False, required=False)
 
     class Meta:
         model = Issue
-        fields = ['id', 'title', 'desc', 'tag', 'priority', 'status', 'author_user']
+        fields = ['id', 'title', 'desc', 'tag', 'priority', 'status', 'author_user', 'assigned_to']
 
 
 class ContributorsDetailSerializer(ModelSerializer):
