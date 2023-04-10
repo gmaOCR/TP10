@@ -70,13 +70,13 @@ class ProjectViewSet(ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    def update(self, request, pk=None):
-        project = Project.objects.get(pk=pk)
-        self.check_object_permissions(request, project)
+    def update(self, request,  *args, **kwargs):
+        project = self.get_object()
         data = request.data
         data['author_user'] = request.user.id
+        self.check_object_permissions(request, project)
         serializer = self.get_serializer(project, data=data, partial=True)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response({'message': 'The project has been updated'}, status=status.HTTP_200_OK)
 

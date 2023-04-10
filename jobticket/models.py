@@ -18,6 +18,9 @@ class Project(models.Model):
         to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='project_author'
     )
 
+    def is_valid_choice(self, value):
+        return value in dict(self.CHOICES).keys()
+
 
 class Contributor(models.Model):
     CHOICE_ROLE = (
@@ -32,7 +35,7 @@ class Contributor(models.Model):
 
     role = models.CharField(max_length=15, choices=CHOICE_ROLE)
     permission = models.CharField(
-      max_length=15, default="Create & Read", choices=CHOICE_PERMISSIONS, verbose_name='Permissions'
+        max_length=15, default="Create & Read", choices=CHOICE_PERMISSIONS, verbose_name='Permissions'
     )
     user = models.ForeignKey(
         to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE

@@ -13,12 +13,20 @@ class ProjectListSerializer(ModelSerializer):
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
-    # author_user = serializers.CharField(source='author_user.email')
     author_user = serializers.CharField(source='author_user.email', read_only=False, required=False)
+    type = serializers.ChoiceField(choices=Project.CHOICES, source='get_type_display')
 
     class Meta:
         model = Project
         fields = ['id', 'title', 'description', 'author_user', 'type', 'contributors']
+
+    def get_type_display(self, obj):
+        return dict(Project.CHOICES).get(obj.type)
+
+    def validate_type(self, value):
+        if not self.instance.is_valid_choice(value):
+            raise serializers.ValidationError('Invalid value for "type".')
+        return value
 
     def contributors(self, instance):
         queryset = instance.contributors.all()
@@ -28,8 +36,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
-        instance.type = validated_data.get('type', instance.type)
-
+        instance.type = validated_data.get('get_type_display', instance.type)
         author_user_email = validated_data.get('author_user', None)
         if author_user_email:
             try:
@@ -75,7 +82,6 @@ class IssueDetailSerializer(ModelSerializer):
             if not project.contributors.filter(user=assigned_to_user).exists():
                 raise serializers.ValidationError(
                     "User with email {} is not a contributor of the project.".format(assigned_to_email['email']))
-
 
             instance.assigned_to = assigned_to_user
 
